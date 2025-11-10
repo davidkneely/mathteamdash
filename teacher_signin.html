@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Number Net - Teacher Sign In</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background-color: #1e1e1e;
+      font-family: Arial, sans-serif;
+      color: #ffffff;
+    }
+
+    .login-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 30px;
+      background-color: #2c2c2c;
+      padding: 60px 80px;
+      border-radius: 20px;
+      box-shadow: 0 0 40px rgba(0, 0, 0, 0.6);
+    }
+
+    h1 {
+      font-size: 36px;
+      font-weight: bold;
+      margin: 0;
+      text-align: center;
+    }
+
+    .input-container {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      width: 100%;
+      max-width: 300px;
+    }
+
+    input[type="email"],
+    input[type="password"] {
+      padding: 15px 20px;
+      font-size: 18px;
+      background-color: #333;
+      color: #ffffff;
+      border: 2px solid #444;
+      border-radius: 10px;
+      outline: none;
+      transition: border-color 0.3s ease;
+    }
+
+    input[type="email"]:focus,
+    input[type="password"]:focus {
+      border-color: #666;
+    }
+
+    input[type="email"]::placeholder,
+    input[type="password"]::placeholder {
+      color: #999;
+    }
+
+    button {
+      padding: 15px 40px;
+      font-size: 20px;
+      font-weight: bold;
+      background-color: #ffffff;
+      color: #000000;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+      width: 100%;
+      max-width: 300px;
+    }
+
+    button:hover {
+      background-color: #e0e0e0;
+    }
+
+    button:active {
+      background-color: #cccccc;
+    }
+    
+    .loading {
+      display: none;
+      margin-top: 20px;
+      font-size: 18px;
+      color: #4CAF50;
+    }
+  </style>
+</head>
+<body>
+  <div class="login-container">
+    <h1>Number Net Sign In</h1>
+    <div class="input-container">
+      <input type="email" id="email" placeholder="Email">
+      <input type="password" id="password" placeholder="Password">
+      <button id="signin-button">Sign In</button>
+      <div class="loading" id="loading">Creating game session...</div>
+    </div>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    // Connect to the socket server
+    const socket = io();
+    
+    const signinButton = document.getElementById('signin-button');
+    const emailInput = document.getElementById('email');
+    const passwordInput = document.getElementById('password');
+    const loadingElement = document.getElementById('loading');
+
+    // Allow Enter key to submit
+    passwordInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        signinButton.click();
+      }
+    });
+
+    // Listen for game creation response
+    socket.on('game:created', (data) => {
+      console.log(`Game created with pin: ${data.gamePin}`);
+      
+      // Store game pin in session storage
+      sessionStorage.setItem('gamePin', data.gamePin);
+      sessionStorage.setItem('teacherEmail', emailInput.value.trim());
+      
+      // Redirect to game start page
+      window.location.href = 'teacher_gamestart.html';
+    });
+
+    // Button click handler
+    signinButton.addEventListener('click', () => {
+      const email = emailInput.value.trim();
+      const password = passwordInput.value.trim();
+      
+      if (email && password) {
+        // Show loading indicator
+        loadingElement.style.display = 'block';
+        signinButton.disabled = true;
+        
+        // Create a new game
+        socket.emit('teacher:create_game', { email });
+      } else {
+        alert('Please enter both email and password');
+      }
+    });
+  </script>
+</body>
+</html>
+

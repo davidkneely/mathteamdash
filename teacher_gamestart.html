@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Number Net - Game Lobby</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      background-color: #1e1e1e;
+      font-family: Arial, sans-serif;
+      color: #ffffff;
+    }
+
+    .header {
+      background-color: #2c2c2c;
+      padding: 20px;
+      text-align: center;
+    }
+
+    .header h3 {
+      margin: 0;
+      font-size: 20px;
+      font-weight: normal;
+    }
+
+    .header .join-link {
+      color: #4CAF50;
+      font-weight: bold;
+    }
+
+    .main-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      gap: 30px;
+      padding: 40px;
+    }
+
+    .lobby-section {
+      display: flex;
+      align-items: center;
+      gap: 40px;
+    }
+
+    .player-count-box {
+      background-color: #2c2c2c;
+      padding: 30px 50px;
+      border-radius: 15px;
+      box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+    }
+
+    .player-count-box h2 {
+      font-size: 36px;
+      margin: 0;
+    }
+
+    .title-section {
+      font-size: 48px;
+      font-weight: bold;
+    }
+
+    .start-button {
+      background-color: #4CAF50;
+      color: #ffffff;
+      border: none;
+      border-radius: 10px;
+      padding: 15px 40px;
+      font-size: 24px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+      box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
+    }
+
+    .start-button:hover {
+      background-color: #45a049;
+    }
+
+    .start-button:active {
+      background-color: #3d8b40;
+    }
+
+    .start-button:disabled {
+      background-color: #666;
+      cursor: not-allowed;
+    }
+
+    .players-section {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      align-items: center;
+    }
+
+    .player-label {
+      background-color: #2c2c2c;
+      padding: 20px 30px;
+      border-radius: 10px;
+      font-size: 28px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+      display: flex;
+      align-items: center;
+      width: 100%;
+      max-width: 500px;
+      margin-bottom: 15px;
+      transition: all 0.3s ease;
+    }
+
+    .player-label.ready {
+      border-left: 6px solid #4CAF50;
+    }
+    
+    .player-icon {
+      background-color: #4CAF50;
+      color: white;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin-right: 15px;
+      font-weight: bold;
+      font-size: 20px;
+    }
+    
+    .player-name {
+      flex-grow: 1;
+    }
+    
+    .player-status {
+      color: #4CAF50;
+      font-size: 18px;
+    }
+    
+    .players-header {
+      font-size: 24px;
+      margin-bottom: 15px;
+      color: #aaa;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h3>Join the game at: <span class="join-link">http://localhost:3000/student_pin.html</span> with the game pin: <span id="game-pin" class="join-link">Loading...</span></h3>
+  </div>
+
+  <div class="main-content">
+    <div class="lobby-section">
+      <div class="player-count-box">
+        <h2><span id="player-count">0</span> Players</h2>
+      </div>
+      <div class="title-section">
+        Number Net
+      </div>
+      <button class="start-button" id="start-button" disabled>Start Now</button>
+    </div>
+
+    <div class="players-section">
+      <div class="players-header">Connected Players</div>
+      <div id="players-container">
+        <!-- Players will be added here dynamically -->
+      </div>
+    </div>
+  </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+      // Check if user is authenticated
+    const gamePin = sessionStorage.getItem('gamePin');
+    console.log(`Teacher gamestart: Retrieved game pin from session storage: ${gamePin}`);
+    
+    if (!gamePin) {
+      console.log('No game pin found, redirecting to signin');
+      window.location.href = 'teacher_signin.html';
+    }
+    
+    // Connect to the socket server
+    const socket = io();
+    
+    // DOM elements
+    const gamePinElement = document.getElementById('game-pin');
+    const playerCountElement = document.getElementById('player-count');
+    const playersContainer = document.getElementById('players-container');
+    const startButton = document.getElementById('start-button');
+    
+    // Set game pin
+    gamePinElement.textContent = gamePin;
+    console.log(`Teacher gamestart: Displayed game pin: ${gamePin}`);
+    
+    // Get teacher email from session storage
+    const teacherEmail = sessionStorage.getItem('teacherEmail');
+    console.log(`Teacher email from session storage: ${teacherEmail}`);
+    
+    // Join the game room to receive updates
+    socket.emit('teacher:rejoin_game', { gamePin, teacherEmail });
+    
+    // Initialize player list with empty array to show "no players" message
+    updatePlayerList([]);
+    
+    // Backup polling mechanism to ensure player list stays updated
+    // This will fetch the game state every 2 seconds as a fallback
+    function pollGameState() {
+      fetch(`/api/game/${gamePin}`)
+        .then(response => {
+          if (!response.ok) {
+            throw new Error('Game not found');
+          }
+          return response.json();
+        })
+        .then(game => {
+          console.log('Polled game state:', game);
+          updatePlayerList(game.players);
+          playerCountElement.textContent = game.playerCount;
+          
+          // Update start button state
+          if (game.playerCount === 4) {
+            startButton.disabled = false;
+            startButton.textContent = 'Start Game';
+          } else {
+            startButton.disabled = true;
+            startButton.textContent = `Waiting for Players (${game.playerCount}/4)`;
+          }
+        })
+        .catch(error => {
+          console.error('Error polling game state:', error);
+        });
+    }
+    
+    // Poll every 2 seconds
+    const pollInterval = setInterval(pollGameState, 2000);
+    
+    // Clean up interval when leaving the page
+    window.addEventListener('beforeunload', () => {
+      clearInterval(pollInterval);
+    });
+    
+    // Listen for player join events
+    socket.on('game:player_joined', (data) => {
+      console.log('Teacher received player_joined event:', data);
+      console.log('Players:', data.players);
+      
+      updatePlayerList(data.players);
+      playerCountElement.textContent = data.playerCount;
+      
+      // Enable start button only when all 4 players have joined
+      if (data.playerCount === 4) {
+        startButton.disabled = false;
+        startButton.textContent = 'Start Game';
+      } else {
+        startButton.disabled = true;
+        startButton.textContent = `Waiting for Players (${data.playerCount}/4)`;
+      }
+    });
+    
+    // Listen for player leave events
+    socket.on('game:player_left', (data) => {
+      updatePlayerList(data.players);
+      playerCountElement.textContent = data.playerCount;
+      
+      // Update start button state
+      if (data.playerCount === 4) {
+        startButton.disabled = false;
+        startButton.textContent = 'Start Game';
+      } else {
+        startButton.disabled = true;
+        startButton.textContent = `Waiting for Players (${data.playerCount}/4)`;
+      }
+    });
+    
+    // Function to update player list
+    function updatePlayerList(players) {
+      // Clear existing players
+      playersContainer.innerHTML = '';
+      
+      // Add each player
+      players.forEach((player, index) => {
+        const playerElement = document.createElement('div');
+        playerElement.className = 'player-label ready';
+        
+        // Create player icon with first letter of nickname
+        const playerIcon = document.createElement('div');
+        playerIcon.className = 'player-icon';
+        playerIcon.textContent = player.nickname.charAt(0).toUpperCase();
+        
+        // Create player name element
+        const playerName = document.createElement('div');
+        playerName.className = 'player-name';
+        playerName.textContent = player.nickname;
+        
+        // Create player status element
+        const playerStatus = document.createElement('div');
+        playerStatus.className = 'player-status';
+        playerStatus.textContent = 'Ready';
+        
+        // Add all elements to the player label
+        playerElement.appendChild(playerIcon);
+        playerElement.appendChild(playerName);
+        playerElement.appendChild(playerStatus);
+        
+        // Add player element to container
+        playersContainer.appendChild(playerElement);
+      });
+      
+      // If no players, show a message
+      if (players.length === 0) {
+        const noPlayersMessage = document.createElement('div');
+        noPlayersMessage.textContent = 'No players have joined yet';
+        noPlayersMessage.style.color = '#888';
+        noPlayersMessage.style.fontSize = '20px';
+        noPlayersMessage.style.padding = '20px';
+        playersContainer.appendChild(noPlayersMessage);
+      }
+    }
+    
+    // Start button click handler
+    startButton.addEventListener('click', () => {
+      // Disable the button to prevent double-clicks
+      startButton.disabled = true;
+      startButton.textContent = 'Starting...';
+      
+      // Send the start game event
+      socket.emit('teacher:start_game', { gamePin });
+      
+      // Wait a short delay to ensure the event is processed
+      setTimeout(() => {
+        window.location.href = 'teacher_gameview.html';
+      }, 1000);
+    });
+  </script>
+</body>
+</html>
+

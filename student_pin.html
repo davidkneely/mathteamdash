@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Number Net - Login</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background-color: #1e1e1e;
+      font-family: Arial, sans-serif;
+      color: #ffffff;
+    }
+
+    .login-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 30px;
+      background-color: #2c2c2c;
+      padding: 60px 80px;
+      border-radius: 20px;
+      box-shadow: 0 0 40px rgba(0, 0, 0, 0.6);
+    }
+
+    h1 {
+      font-size: 48px;
+      font-weight: bold;
+      margin: 0;
+      text-align: center;
+    }
+
+    .input-container {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      width: 100%;
+      max-width: 300px;
+    }
+
+    input[type="text"] {
+      padding: 15px 20px;
+      font-size: 18px;
+      background-color: #333;
+      color: #ffffff;
+      border: 2px solid #444;
+      border-radius: 10px;
+      outline: none;
+      transition: border-color 0.3s ease;
+    }
+
+    input[type="text"]:focus {
+      border-color: #666;
+    }
+
+    input[type="text"]::placeholder {
+      color: #999;
+    }
+
+    button {
+      padding: 15px 40px;
+      font-size: 20px;
+      font-weight: bold;
+      background-color: #ffffff;
+      color: #000000;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+      width: 100%;
+      max-width: 300px;
+    }
+
+    button:hover {
+      background-color: #e0e0e0;
+    }
+
+    button:active {
+      background-color: #cccccc;
+    }
+
+    button:disabled {
+      background-color: #cccccc;
+      cursor: not-allowed;
+    }
+
+    .error-message {
+      color: #ff6b6b;
+      font-size: 16px;
+      text-align: center;
+      display: none;
+      margin-top: 10px;
+    }
+
+    .loading {
+      display: none;
+      margin-top: 10px;
+      font-size: 16px;
+      color: #4CAF50;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="login-container">
+    <h1>Number Net</h1>
+    <div class="input-container">
+      <input type="text" id="game-pin" placeholder="Game Pin">
+      <div class="error-message" id="error-message"></div>
+      <button id="enter-button">Enter</button>
+      <div class="loading" id="loading">Checking game pin...</div>
+    </div>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    // Connect to the socket server
+    const socket = io();
+    
+    // DOM elements
+    const enterButton = document.getElementById('enter-button');
+    const gamePinInput = document.getElementById('game-pin');
+    const errorMessage = document.getElementById('error-message');
+    const loadingElement = document.getElementById('loading');
+
+    // Allow Enter key to submit
+    gamePinInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        enterButton.click();
+      }
+    });
+
+    // Listen for game validation response
+    socket.on('game:validated', (data) => {
+      console.log(`Game validated with pin: ${data.gamePin}`);
+      
+      // Store game pin in session storage
+      sessionStorage.setItem('gamePin', data.gamePin);
+      
+      // Redirect to nickname page
+      window.location.href = 'student_name.html';
+    });
+    
+    // Listen for errors
+    socket.on('game:error', (data) => {
+      // Show error message
+      errorMessage.textContent = data.message;
+      errorMessage.style.display = 'block';
+      
+      // Hide loading indicator
+      loadingElement.style.display = 'none';
+      enterButton.disabled = false;
+    });
+
+    // Button click handler
+    enterButton.addEventListener('click', () => {
+      const pin = gamePinInput.value.trim();
+      
+      if (pin) {
+        // Hide error message
+        errorMessage.style.display = 'none';
+        
+        // Show loading indicator
+        loadingElement.style.display = 'block';
+        enterButton.disabled = true;
+        
+        console.log(`Submitting game pin: ${pin}`);
+        
+        // Validate game pin
+        socket.emit('student:validate_game', { gamePin: pin });
+      } else {
+        errorMessage.textContent = 'Please enter a game pin';
+        errorMessage.style.display = 'block';
+      }
+    });
+  </script>
+</body>
+</html>

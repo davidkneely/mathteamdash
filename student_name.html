@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Number Net - Join Game</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      background-color: #1e1e1e;
+      font-family: Arial, sans-serif;
+      color: #ffffff;
+    }
+
+    .banner {
+      background-color: #ffffff;
+      color: #000000;
+      padding: 20px;
+      text-align: center;
+      font-size: 24px;
+      font-weight: bold;
+    }
+
+    .main-container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      gap: 30px;
+      padding: 40px;
+    }
+
+    h1 {
+      font-size: 48px;
+      font-weight: bold;
+      margin: 0;
+      text-align: center;
+    }
+
+    .input-container {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      width: 100%;
+      max-width: 350px;
+    }
+
+    input[type="text"] {
+      padding: 15px 20px;
+      font-size: 18px;
+      background-color: #333;
+      color: #ffffff;
+      border: 2px solid #444;
+      border-radius: 10px;
+      outline: none;
+      transition: border-color 0.3s ease;
+    }
+
+    input[type="text"]:focus {
+      border-color: #666;
+    }
+
+    input[type="text"]::placeholder {
+      color: #999;
+    }
+
+    button {
+      padding: 15px 40px;
+      font-size: 20px;
+      font-weight: bold;
+      background-color: #ffffff;
+      color: #000000;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+      width: 100%;
+      max-width: 350px;
+    }
+
+    button:hover {
+      background-color: #e0e0e0;
+    }
+
+    button:active {
+      background-color: #cccccc;
+    }
+
+    button:disabled {
+      background-color: #cccccc;
+      cursor: not-allowed;
+    }
+
+    .error-message {
+      color: #ff6b6b;
+      font-size: 16px;
+      text-align: center;
+      display: none;
+      margin-top: 10px;
+    }
+
+    .loading {
+      display: none;
+      margin-top: 10px;
+      font-size: 16px;
+      color: #4CAF50;
+      text-align: center;
+    }
+    
+    /* Waiting Overlay */
+    .waiting-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.5);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+    }
+    
+    .waiting-message {
+      font-size: 32px;
+      font-weight: bold;
+      color: white;
+      text-align: center;
+      padding: 30px;
+    }
+  </style>
+</head>
+<body>
+  <div class="banner">
+    Game Pin: <span id="game-pin">Loading...</span>
+  </div>
+
+  <div class="main-container">
+    <h1>Play Now</h1>
+    <div class="input-container">
+      <input type="text" id="nickname" placeholder="Nickname">
+      <div class="error-message" id="error-message"></div>
+      <button id="join-button">Join Game</button>
+      <div class="loading" id="loading">Joining game...</div>
+    </div>
+  </div>
+  
+  <!-- Waiting Overlay -->
+  <div class="waiting-overlay" id="waiting-overlay">
+    <div class="waiting-message">
+      Waiting for Teacher to start game...
+    </div>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    // Check if game pin is available
+    const gamePin = sessionStorage.getItem('gamePin');
+    console.log(`Student name page: Retrieved game pin from session storage: ${gamePin}`);
+    
+    if (!gamePin) {
+      console.log('No game pin found, redirecting to pin entry');
+      window.location.href = 'student_pin.html';
+    }
+    
+    // Connect to the socket server
+    const socket = io();
+    
+    // DOM elements
+    const gamePinElement = document.getElementById('game-pin');
+    const joinButton = document.getElementById('join-button');
+    const nicknameInput = document.getElementById('nickname');
+    const errorMessage = document.getElementById('error-message');
+    const loadingElement = document.getElementById('loading');
+    
+    // Set game pin
+    gamePinElement.textContent = gamePin;
+    console.log(`Student name page: Displayed game pin: ${gamePin}`);
+
+    // Allow Enter key to submit
+    nicknameInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        joinButton.click();
+      }
+    });
+    
+    // Listen for join response
+    socket.on('game:joined', (data) => {
+      const nickname = nicknameInput.value.trim();
+      
+      // Store nickname in session storage
+      sessionStorage.setItem('nickname', nickname);
+      
+      // Show waiting overlay
+      document.getElementById('waiting-overlay').style.display = 'flex';
+      
+      // Hide loading indicator
+      loadingElement.style.display = 'none';
+      
+      console.log(`Joined game with pin ${gamePin} as ${nickname}, waiting for teacher to start...`);
+      
+      // Make sure we're in the game room to receive start events
+      socket.emit('student:ensure_in_room', { gamePin, nickname });
+    });
+    
+    // Listen for game start event
+    socket.on('game:starting', (data) => {
+      console.log('Game is starting!', data);
+      
+      // Show a message on the waiting overlay
+      const waitingOverlay = document.getElementById('waiting-overlay');
+      const waitingMessage = waitingOverlay.querySelector('.waiting-message');
+      if (waitingMessage) {
+        waitingMessage.textContent = 'Game is starting...';
+      }
+      
+      // Store target numbers in session storage
+      if (data.targetNumbers) {
+        sessionStorage.setItem('targetNumbers', JSON.stringify(data.targetNumbers));
+      }
+      
+      // Redirect to game page after a short delay
+      setTimeout(() => {
+        window.location.href = 'student_game.html';
+      }, 1000);
+    });
+    
+    // Listen for errors
+    socket.on('game:error', (data) => {
+      // Show error message
+      errorMessage.textContent = data.message;
+      errorMessage.style.display = 'block';
+      
+      // Hide loading indicator
+      loadingElement.style.display = 'none';
+      joinButton.disabled = false;
+    });
+
+    // Button click handler
+    joinButton.addEventListener('click', () => {
+      const nickname = nicknameInput.value.trim();
+      
+      if (nickname) {
+        // Hide error message
+        errorMessage.style.display = 'none';
+        
+        // Show loading indicator
+        loadingElement.style.display = 'block';
+        joinButton.disabled = true;
+        
+        // Join the game
+        socket.emit('student:join_game', { 
+          gamePin,
+          nickname
+        });
+      } else {
+        errorMessage.textContent = 'Please enter a nickname';
+        errorMessage.style.display = 'block';
+      }
+    });
+  </script>
+</body>
+</html>

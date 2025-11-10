@@ -1,0 +1,1485 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Number Net - Student Game</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 20px;
+      background-color: #1e1e1e;
+      font-family: Arial, sans-serif;
+      color: #ffffff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+      min-height: 100vh;
+      overflow-y: auto;
+    }
+
+    /* Timer Styles */
+    #timer-container {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background-color: #333;
+      padding: 15px 30px;
+      border-radius: 10px;
+      box-shadow: 0 0 20px rgba(0,0,0,0.5);
+      gap: 20px;
+      width: 100%;
+      max-width: 600px;
+    }
+
+    #round-indicator {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 24px;
+      font-weight: bold;
+    }
+
+    #timer-section {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+
+    #timer-icon {
+      width: 48px;
+      height: 48px;
+      object-fit: contain;
+    }
+
+    #timer {
+      font-size: 36px;
+      transition: color 0.3s ease;
+    }
+
+    #timer.transition-message {
+      font-size: 28px;
+      color: #fff;
+    }
+
+    @keyframes throb {
+      0%, 100% { 
+        transform: scale(1); 
+      }
+      50% { 
+        transform: scale(1.3); 
+      }
+    }
+
+    #timer.throb {
+      animation: throb 0.5s ease;
+    }
+
+    /* Target Number Styles */
+    #target-number {
+      font-size: 48px;
+      font-weight: bold;
+      background-color: #333;
+      padding: 20px 40px;
+      border-radius: 10px;
+      box-shadow: 0 0 20px rgba(0,0,0,0.5);
+    }
+
+    /* Table Styles */
+    table {
+      border-collapse: collapse;
+      width: 90%;
+      max-width: 900px;
+      background-color: #2c2c2c;
+      box-shadow: 0 0 20px rgba(0,0,0,0.5);
+      border-radius: 10px;
+      overflow: hidden;
+      table-layout: fixed;
+      vertical-align: top;
+    }
+
+    th {
+      padding: 15px;
+      text-align: center;
+      font-size: 20px;
+      border-bottom: 2px solid #444;
+      vertical-align: top;
+    }
+
+    th .header-content {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 10px;
+    }
+
+    th .item-count {
+      background-color: #444;
+      color: #fff;
+      border-radius: 50%;
+      min-width: 24px;
+      min-height: 24px;
+      padding: 4px 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: bold;
+      box-sizing: border-box;
+      flex-shrink: 0;
+    }
+
+    th img {
+      width: 32px;
+      height: 32px;
+      object-fit: contain;
+    }
+
+    td {
+      padding: 10px;
+      text-align: center;
+      border-bottom: none;
+      font-size: 18px;
+      width: 25%;
+      vertical-align: top;
+    }
+
+    .item-container {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      align-items: center;
+      max-height: 400px;
+      overflow-y: auto;
+      padding: 5px;
+      box-sizing: border-box;
+    }
+
+    /* Custom scrollbar styling */
+    .item-container::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    .item-container::-webkit-scrollbar-track {
+      background: #444;
+      border-radius: 4px;
+    }
+
+    .item-container::-webkit-scrollbar-thumb {
+      background: #666;
+      border-radius: 4px;
+    }
+
+    .item-container::-webkit-scrollbar-thumb:hover {
+      background: #888;
+    }
+
+
+    .highlightYellow {
+      background-color: yellow;
+      color: black;
+      border-radius: 8px;
+      padding: 5px 10px;
+      display: inline-block;
+    } 
+    .highlightGreen {
+      background-color: green;
+      color: white;
+      border-radius: 8px;
+      padding: 5px 10px;
+      display: inline-block;
+    }
+    .highlightRed {
+      background-color: red;
+      color: white;
+      border-radius: 8px;
+      padding: 5px 10px;
+      display: inline-block;
+    } 
+    .highlightBlue {
+      background-color: blue;
+      color: white;
+      border-radius: 8px;
+      padding: 5px 10px;
+      display: inline-block;
+    }
+
+    /* Number Pad Styles */
+    #numpad-container {
+      display: grid;
+      grid-template-columns: repeat(4, 70px);
+      grid-template-rows: repeat(4, 70px);
+      grid-gap: 10px;
+    }
+
+    .button {
+      width: 60px;
+      height: 60px;
+      font-size: 24px;
+      background-color: #333;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .button:hover:not(:disabled) {
+      background-color: #555;
+    }
+
+    .button:disabled {
+      background-color: #222;
+      color: #666;
+      cursor: not-allowed;
+      opacity: 0.5;
+    }
+
+    .extra-button {
+      font-size: 14px;
+    }
+
+    #display.disabled {
+      background-color: #111;
+      color: #333;
+    }
+
+    #display {
+      color: #fff;
+      font-size: 28px;
+      margin-bottom: 20px;
+      width: 300px;
+      min-height: 50px;
+      max-width: 90vw;
+      text-align: center;
+      background-color: #222;
+      border-radius: 8px;
+      padding: 10px;
+      overflow-wrap: break-word;
+      word-break: break-word;
+      white-space: pre-wrap;
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    /* Shake animation for incorrect answers */
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      10%, 30%, 50%, 70%, 90% { transform: translateX(-10px); }
+      20%, 40%, 60%, 80% { transform: translateX(10px); }
+    }
+
+    body.shake {
+      animation: shake 0.5s;
+    }
+
+    /* Pulse throb for duplicate items */
+    @keyframes pulseThrob {
+      0%, 100% { 
+        transform: scale(1);
+        background-color: yellow;
+      }
+      50% { 
+        transform: scale(1.2);
+        background-color: #ffeb3b;
+      }
+    }
+
+    span.duplicate-throb {
+      animation: pulseThrob 0.5s ease;
+    }
+
+    /* Stats Table Styles */
+    .stats-container {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 1001;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+      gap: 30px;
+    }
+
+    .stats-table {
+      border-collapse: collapse;
+      width: 100%;
+      max-width: 900px;
+      background-color: #2c2c2c;
+      box-shadow: 0 0 20px rgba(0,0,0,0.5);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    .stats-table th {
+      padding: 15px;
+      text-align: center;
+      font-size: 20px;
+      border-bottom: 2px solid #444;
+      background-color: #333;
+    }
+
+    .stats-table td {
+      padding: 15px;
+      text-align: center;
+      font-size: 18px;
+      border-bottom: 1px solid #444;
+    }
+
+    .stats-table tr:last-child td {
+      border-bottom: none;
+    }
+    
+    .stats-table .total-row {
+      background-color: #333;
+      border-top: 2px solid #555;
+    }
+    
+    .stats-table .total-row td {
+      font-weight: bold;
+    }
+
+    .congrats-message {
+      font-size: 48px;
+      font-weight: bold;
+      color: #ffffff;
+      text-align: center;
+    }
+
+    .summary-stats {
+      color: #ffffff;
+      font-size: 24px;
+      text-align: center;
+    }
+
+    .play-again-button {
+      background-color: #ffffff;
+      color: #000000;
+      border: none;
+      border-radius: 10px;
+      padding: 15px 40px;
+      font-size: 24px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+
+    .play-again-button:hover {
+      background-color: #e0e0e0;
+    }
+
+    /* Confetti Styles */
+    .confetti-container {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 2000;
+    }
+
+    .confetti {
+      position: absolute;
+      width: 10px;
+      height: 10px;
+      animation: confetti-fall linear forwards;
+    }
+
+    @keyframes confetti-fall {
+      to {
+        transform: translateY(100vh) rotate(360deg);
+        opacity: 0;
+      }
+    }
+
+    /* Overlay Styles */
+    #round-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.5);
+      display: none;
+      z-index: 1000;
+      justify-content: center;
+      align-items: center;
+    }
+
+    #round-overlay-text {
+      font-size: 48px;
+      font-weight: bold;
+      color: #ffffff;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <!-- Round Transition Overlay -->
+  <div id="round-overlay">
+    <div id="round-overlay-text"></div>
+  </div>
+
+  <!-- Confetti Container -->
+  <div class="confetti-container" id="confetti-container"></div>
+
+  <!-- Timer -->
+  <div id="timer-container">
+    <div id="round-indicator">
+      Round <span id="current-round">1</span>
+    </div>
+    <div id="timer-section">
+      <img id="timer-icon" src="timerIcon.png" alt="Timer Icon">
+      <div id="timer">0</div>
+    </div>
+  </div>
+
+  <!-- Target Number -->
+  <div id="target-number">65</div>
+
+  <!-- Player Display Table -->
+  <table>
+    <thead>
+      <tr id="player-headers">
+        <!-- Player headers will be dynamically populated -->
+      </tr>
+    </thead>
+    <tbody>
+      <tr id="player-containers">
+        <!-- Player containers will be dynamically populated -->
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- Number Pad -->
+  <div id="overlay">
+    <div id="display"></div>
+    <div id="numpad-container">
+      <!-- Row 1 -->
+      <button class="button num-button">7</button>
+      <button class="button num-button">8</button>
+      <button class="button num-button">9</button>
+      <button class="button op-button">÷</button>
+
+      <!-- Row 2 -->
+      <button class="button num-button">4</button>
+      <button class="button num-button">5</button>
+      <button class="button num-button">6</button>
+      <button class="button op-button">×</button>
+
+      <!-- Row 3 -->
+      <button class="button num-button">1</button>
+      <button class="button num-button">2</button>
+      <button class="button num-button">3</button>
+      <button class="button op-button">-</button>
+
+      <!-- Row 4 -->
+      <button class="button num-button">0</button>
+      <button class="button extra-button" id="clear">Clear</button>
+      <button class="button extra-button" id="submit">Submit</button>
+      <button class="button op-button">+</button>
+    </div>
+  </div>
+
+  <!-- Stats Table -->
+  <div class="stats-container" id="stats-container">
+    <div class="congrats-message" id="congrats-message"></div>
+    <table class="stats-table">
+      <thead>
+        <tr>
+          <th>Target Number</th>
+          <th>Correct</th>
+          <th>Incorrect</th>
+          <th>Duplicate</th>
+          <th>Accuracy</th>
+        </tr>
+      </thead>
+      <tbody id="stats-body">
+      </tbody>
+    </table>
+    <div class="summary-stats" id="summary-stats"></div>
+    <button class="play-again-button" id="play-again-button">Play Again</button>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    // Check if user is authenticated
+    const gamePin = sessionStorage.getItem('gamePin');
+    const nickname = sessionStorage.getItem('nickname');
+    if (!gamePin || !nickname) {
+      window.location.href = 'student_pin.html';
+    }
+    
+    // Connect to the socket server
+    const socket = io();
+    
+    // Join the game room
+    console.log(`Joining game room with pin: ${gamePin}`);
+    socket.emit('student:rejoin_game', { gamePin, nickname });
+    
+    // Request current players in the game with retry mechanism
+    let retryCount = 0;
+    const maxRetries = 3;
+    
+    function requestPlayers() {
+      if (retryCount >= maxRetries) {
+        console.warn(`Max retries (${maxRetries}) reached for player list request`);
+        return;
+      }
+      
+      console.log(`Requesting player list (attempt ${retryCount + 1})`);
+      socket.emit('student:request_players', { gamePin });
+      retryCount++;
+      
+      // Schedule next retry if needed
+      setTimeout(() => {
+        // Only retry if we still don't have players
+        const playerHeaders = document.getElementById('player-headers');
+        if (!playerHeaders || playerHeaders.children.length === 0) {
+          requestPlayers();
+        }
+      }, 1000 * retryCount); // Increasing delay for each retry
+    }
+    
+    // Start the retry process
+    setTimeout(requestPlayers, 1000);
+    
+    // Game configuration
+    const ROUND_DURATION = 60; // Duration of each round in seconds
+    
+    // Timer functionality
+    let timeLeft = ROUND_DURATION;
+    let currentRound = 1;
+    const totalRounds = 4;
+    const timerDisplay = document.getElementById("timer");
+    
+    // Try to get target numbers from session storage
+    let targetNumbers = [];
+    try {
+      const storedNumbers = sessionStorage.getItem('targetNumbers');
+      if (storedNumbers) {
+        targetNumbers = JSON.parse(storedNumbers);
+        console.log('Retrieved target numbers from session storage:', targetNumbers);
+      }
+    } catch (e) {
+      console.error('Error parsing target numbers:', e);
+    }
+    
+    // Track player-specific target number for current round
+    let currentPlayerTargetNumber = 0;
+    let playerIndex = -1;
+    
+    // Store equations from all players by round and target number
+    let playerEquations = {};
+    
+    // Define player-specific highlight colors based on player index
+    const playerColors = ['highlightYellow', 'highlightRed', 'highlightBlue', 'highlightGreen'];
+    
+      // Get current target number (player-specific)
+      function getCurrentTargetNumber() {
+        console.log(`getCurrentTargetNumber called: currentPlayerTargetNumber=${currentPlayerTargetNumber}, playerIndex=${playerIndex}`);
+        return currentPlayerTargetNumber || 0;
+      }
+
+    // Track statistics for each round
+    const gameStats = [];
+    for (let i = 0; i < 4; i++) {
+      gameStats.push({
+        correct: 0,
+        incorrect: 0,
+        duplicate: 0
+      });
+    }
+    
+    // Function to populate player table with current players
+    function populatePlayerTable(players) {
+      console.log('Populating player table with players:', players);
+      
+      if (!players || players.length === 0) {
+        console.error('No players provided to populatePlayerTable');
+        
+        // Create fallback players if none are provided
+        // This ensures the table always shows something
+        players = [
+          { nickname: nickname, ready: true }  // Current player
+        ];
+        
+        // Add placeholder players to fill the table
+        const placeholders = ['Player 2', 'Player 3', 'Player 4'];
+        placeholders.forEach(name => {
+          players.push({ nickname: name, ready: false });
+        });
+        
+        console.log('Created fallback players:', players);
+      }
+
+      const playerHeadersRow = document.getElementById('player-headers');
+      const playerContainersRow = document.getElementById('player-containers');
+      
+      // Clear existing content
+      playerHeadersRow.innerHTML = '';
+      playerContainersRow.innerHTML = '';
+      
+      // First, find the current player's index
+      const currentPlayerIndex = players.findIndex(player => player.nickname === nickname);
+      
+      // If current player not found, use default order
+      const orderedPlayers = [...players];
+      
+      // Move current player to the first position if found
+      if (currentPlayerIndex !== -1) {
+        const currentPlayer = orderedPlayers.splice(currentPlayerIndex, 1)[0];
+        orderedPlayers.unshift(currentPlayer);
+      }
+      
+      // Create headers and containers for each player
+      orderedPlayers.forEach(player => {
+        const playerId = player.nickname.toLowerCase().replace(/\s+/g, '-');
+        
+        // Create header
+        const headerCell = document.createElement('th');
+        headerCell.innerHTML = `
+          <div class="header-content">
+            <img src="playerIcon.png" alt="${player.nickname} Icon">
+            ${player.nickname}
+            <div class="item-count" id="count-${playerId}">0</div>
+          </div>
+        `;
+        playerHeadersRow.appendChild(headerCell);
+        
+        // Create container
+        const containerCell = document.createElement('td');
+        containerCell.innerHTML = `
+          <div class="item-container" id="items-${playerId}"></div>
+        `;
+        playerContainersRow.appendChild(containerCell);
+      });
+    }
+
+    function startRound() {
+      if (currentRound > totalRounds) {
+        return;
+      }
+
+      timeLeft = ROUND_DURATION;
+      
+      // Update round indicator
+      document.getElementById('current-round').textContent = currentRound;
+      
+      // Clear player's column at the start of each round (except the first)
+      if (currentRound > 1) {
+        const playerId = nickname.toLowerCase().replace(/\s+/g, '-');
+        const playerContainer = document.getElementById(`items-${playerId}`);
+        if (playerContainer) {
+          playerContainer.innerHTML = '';
+          updateItemCounts();
+        }
+      }
+      
+      // Update the target number display with player-specific target
+      const targetNumberDisplay = document.getElementById('target-number');
+      if (targetNumberDisplay) {
+        const targetNum = getCurrentTargetNumber();
+        targetNumberDisplay.textContent = targetNum + " is the answer. What is the question?";
+        console.log(`Displaying target number ${targetNum} for round ${currentRound}`);
+      }
+      
+      // Clear the number pad display
+      const display = document.getElementById('display');
+      if (display) {
+        display.textContent = '';
+      }
+      
+      // Enable the keypad when round starts
+      enableKeypad(true);
+      
+      timerDisplay.textContent = ROUND_DURATION;
+      
+      // We don't start the countdown here anymore - server will control it
+    }
+    
+    // Socket event listeners
+    socket.on('game:starting', (data) => {
+      targetNumbers = data.targetNumbers || [];
+      currentRound = data.currentRound;
+      timeLeft = data.timeLeft;
+      
+      // Use players data directly from the game:starting event if available
+      if (data.players && Array.isArray(data.players) && data.players.length > 0) {
+        console.log('Populating player table from game:starting event:', data.players);
+        populatePlayerTable(data.players);
+      } else {
+        // Fallback: request current player list
+        console.log('No players in game:starting event, requesting player list');
+        socket.emit('student:request_players', { gamePin });
+      }
+      
+      // We'll wait for the game:player_target event to get our specific target number
+      console.log('Game starting, waiting for player-specific target number');
+      // Don't start the round yet - wait for the player_target event
+    });
+    
+    // Handle player list updates
+    socket.on('game:player_list', (data) => {
+      console.log('Received game:player_list event:', data);
+      
+      if (data.players && Array.isArray(data.players)) {
+        if (data.players.length === 0) {
+          console.warn('Received empty players array in game:player_list');
+        } else {
+          console.log(`Received ${data.players.length} players:`, data.players.map(p => p.nickname).join(', '));
+        }
+        populatePlayerTable(data.players);
+      } else {
+        console.error('Invalid players data in game:player_list event:', data);
+      }
+    });
+    
+    socket.on('game:time_update', (data) => {
+      console.log('Received time update:', data);
+      timeLeft = data.timeLeft;
+      timerDisplay.textContent = timeLeft;
+      
+      // Make timer throb when 10 or below
+      if (timeLeft <= 10) {
+        timerDisplay.classList.remove('throb');
+        setTimeout(() => {
+          timerDisplay.classList.add('throb');
+        }, 10);
+      }
+    });
+    
+    socket.on('game:times_up', () => {
+      timerDisplay.classList.remove('throb');
+      timerDisplay.textContent = "0";
+      
+      // Disable keypad when timer reaches zero
+      enableKeypad(false);
+      
+      // Show overlay with "Time's Up!" message
+      document.getElementById('round-overlay').style.display = 'flex';
+      document.getElementById('round-overlay-text').textContent = "Time's Up!";
+    });
+    
+    socket.on('game:get_ready', () => {
+      document.getElementById('round-overlay-text').textContent = "Get ready to switch...";
+    });
+    
+    socket.on('game:round_announcement', (data) => {
+      document.getElementById('round-overlay-text').textContent = `Round ${data.round}`;
+      currentRound = data.round;
+    });
+    
+    socket.on('game:countdown', (data) => {
+      document.getElementById('round-overlay-text').textContent = data.message;
+    });
+    
+    socket.on('game:round_start', (data) => {
+      timeLeft = data.timeLeft;
+      
+      // We'll wait for the game:player_target event to get our specific target number
+      // This event just tells us the round is starting
+      console.log(`Round ${data.currentRound} starting, waiting for player-specific target number`);
+    });
+    
+    // Handle player-specific target number
+    socket.on('game:player_target', (data) => {
+      console.log(`Received game:player_target event:`, data);
+      console.log(`Received player target for round ${data.currentRound || currentRound}: ${data.targetNumber}`);
+      
+      // Store player index if provided
+      if (data.playerIndex !== undefined) {
+        playerIndex = data.playerIndex;
+        console.log(`Player index set to ${playerIndex}`);
+      } else {
+        console.warn('No playerIndex provided in game:player_target event');
+      }
+      
+      // Set the current player's target number for this round
+      if (data.targetNumber !== undefined) {
+        currentPlayerTargetNumber = data.targetNumber;
+        console.log(`Set currentPlayerTargetNumber to ${currentPlayerTargetNumber}`);
+      } else {
+        console.error('No targetNumber provided in game:player_target event');
+      }
+      
+      // Hide overlay and start the round
+      document.getElementById('round-overlay').style.display = 'none';
+      startRound();
+      
+      // Display equations for the current target number
+      displayEquationsForCurrentTarget();
+    });
+    
+    socket.on('game:end', () => {
+      document.getElementById('round-overlay-text').textContent = "End of Game";
+    });
+    
+    socket.on('game:stats', (data) => {
+      console.log('Received game stats:', data);
+      
+      // If server sends player stats, update our local gameStats
+      if (data && data.playerStats && data.playerStats[nickname]) {
+        const playerStats = data.playerStats[nickname];
+        
+        // Update each round's stats
+        for (let i = 0; i < Math.min(playerStats.length, gameStats.length); i++) {
+          if (playerStats[i]) {
+            gameStats[i].correct = playerStats[i].correct || 0;
+            gameStats[i].incorrect = playerStats[i].incorrect || 0;
+            gameStats[i].duplicate = playerStats[i].duplicate || 0;
+            console.log(`Updated gameStats for round ${i+1} from server:`, gameStats[i]);
+          }
+        }
+      }
+      
+      showStatsTable();
+    });
+    
+    socket.on('game:paused', (data) => {
+      // Game is paused by teacher
+      document.getElementById('round-overlay').style.display = 'flex';
+      document.getElementById('round-overlay-text').textContent = data.message || "Game Paused";
+    });
+    
+    socket.on('game:resumed', (data) => {
+      // Game is resumed by teacher
+      document.getElementById('round-overlay').style.display = 'none';
+      timeLeft = data.timeLeft;
+    });
+    
+    socket.on('equation:correct', (data) => {
+      // Equation was correct
+      const { equation } = data;
+      
+      // Store our own equation in the playerEquations structure
+      if (!playerEquations[nickname]) {
+        playerEquations[nickname] = {};
+      }
+      
+      if (!playerEquations[nickname][currentPlayerTargetNumber]) {
+        playerEquations[nickname][currentPlayerTargetNumber] = [];
+      }
+      
+      // Get the correct color for this player based on player index
+      const colorClass = playerColors[playerIndex % playerColors.length];
+      
+      // Check if we already have this equation (avoid duplicates)
+      const isDuplicate = playerEquations[nickname][currentPlayerTargetNumber].some(eq => eq.equation === equation);
+      if (isDuplicate) {
+        console.log(`Duplicate equation detected in our own equations: ${equation}`);
+        return;
+      }
+      
+      // Store our equation with metadata
+      playerEquations[nickname][currentPlayerTargetNumber].push({
+        equation,
+        targetNumber: currentPlayerTargetNumber,
+        round: currentRound,
+        colorClass
+      });
+      
+      // Update game stats for the current round
+      const currentRoundIndex = currentRound - 1;
+      if (gameStats[currentRoundIndex]) {
+        gameStats[currentRoundIndex].correct++;
+        console.log(`Updated gameStats for round ${currentRound}: correct=${gameStats[currentRoundIndex].correct}`);
+      }
+      
+      console.log(`Stored our equation for target ${currentPlayerTargetNumber}: ${equation} (color: ${colorClass})`);
+    });
+    
+    socket.on('equation:incorrect', (data) => {
+      // Equation was incorrect
+      shakeScreen();
+      
+      // Update game stats for the current round
+      const currentRoundIndex = currentRound - 1;
+      if (gameStats[currentRoundIndex]) {
+        gameStats[currentRoundIndex].incorrect++;
+        console.log(`Updated gameStats for round ${currentRound}: incorrect=${gameStats[currentRoundIndex].incorrect}`);
+      }
+    });
+    
+    socket.on('equation:duplicate', (data) => {
+      // Equation was duplicate
+      const duplicateItem = checkDuplicate(data.equation);
+      if (duplicateItem) {
+        throbItem(duplicateItem);
+      }
+      
+      // Update game stats for the current round
+      const currentRoundIndex = currentRound - 1;
+      if (gameStats[currentRoundIndex]) {
+        gameStats[currentRoundIndex].duplicate++;
+        console.log(`Updated gameStats for round ${currentRound}: duplicate=${gameStats[currentRoundIndex].duplicate}`);
+      }
+      
+      display.textContent = 'DUPLICATE';
+      
+      // Clear display after 1.5 seconds
+      setTimeout(() => {
+        display.textContent = '';
+      }, 1500);
+    });
+    
+    // Handle correct equations from other players
+    socket.on('player:correct_equation', (data) => {
+      console.log('Received correct equation from player:', data);
+      
+      const { nickname: playerName, equation, targetNumber, round, playerIndex: eqPlayerIndex } = data;
+      
+      // Skip our own equations - we already added them when submitting
+      if (playerName === nickname) {
+        console.log(`Skipping our own equation broadcast: ${equation}`);
+        return;
+      }
+      
+      // Store the equation with metadata for potential round resets
+      if (!playerEquations[playerName]) {
+        playerEquations[playerName] = {};
+      }
+      
+      if (!playerEquations[playerName][targetNumber]) {
+        playerEquations[playerName][targetNumber] = [];
+      }
+      
+      // Check if we already have this equation (avoid duplicates)
+      const isDuplicate = playerEquations[playerName][targetNumber].some(eq => eq.equation === equation);
+      if (isDuplicate) {
+        console.log(`Duplicate equation from ${playerName}: ${equation}`);
+        return;
+      }
+      
+      // Get color based on player index (consistent per player)
+      const colorClass = playerColors[eqPlayerIndex % playerColors.length];
+      
+      // Store equation with its metadata
+      playerEquations[playerName][targetNumber].push({
+        equation,
+        targetNumber,
+        round,
+        colorClass
+      });
+      
+      console.log(`Stored equation from ${playerName} for target ${targetNumber}: ${equation} (color: ${colorClass})`);
+      
+      // Only display the equation if it's for the current target number this player is solving
+      if (targetNumber === currentPlayerTargetNumber) {
+        console.log(`Adding equation to display: ${equation} from ${playerName}`);
+        addItem(playerName, equation, colorClass);
+      }
+    });
+    
+    function startCountdown() {
+      const countdown = setInterval(() => {
+        timeLeft--;
+        timerDisplay.textContent = timeLeft;
+
+        // Make timer red when 10 or below
+        if (timeLeft <= 10) {
+          
+          // Throb animation for each tick
+          timerDisplay.classList.remove('throb');
+          setTimeout(() => {
+            timerDisplay.classList.add('throb');
+          }, 10);
+        }
+
+        if (timeLeft <= 0) {
+          clearInterval(countdown);
+          
+          // Disable keypad when timer reaches zero
+          enableKeypad(false);
+          
+          timerDisplay.classList.remove('throb');
+          timerDisplay.textContent = "0";
+          timerDisplay.style.color = '#fff';
+          
+          // Show overlay with "Time's Up!" message
+          document.getElementById('round-overlay').style.display = 'flex';
+          const overlayText = document.getElementById('round-overlay-text');
+          overlayText.textContent = "Time's Up!";
+          
+          // After 3 seconds, show transition message
+          setTimeout(() => {
+            if (currentRound < totalRounds) {
+              // Show "Get ready to switch" message
+              overlayText.textContent = "Get ready to switch...";
+              
+              // After 3 seconds, show round number
+              setTimeout(() => {
+                overlayText.textContent = `Round ${currentRound + 1}`;
+                
+                // After 2 seconds, show countdown
+                setTimeout(() => {
+                  const messages = ["Ready...", "Set...", "Go!"];
+                  let messageIndex = 0;
+                  
+                  overlayText.textContent = messages[messageIndex];
+                  
+                  const goCountdown = setInterval(() => {
+                    messageIndex++;
+                    
+                    if (messageIndex < messages.length) {
+                      overlayText.textContent = messages[messageIndex];
+                    } else {
+                      clearInterval(goCountdown);
+                      
+                      // After showing "Go!", hide overlay and start next round
+                      setTimeout(() => {
+                        document.getElementById('round-overlay').style.display = 'none';
+                        currentRound++;
+                        startRound();
+                      }, 1000);
+                    }
+                  }, 1000);
+                }, 2000);
+              }, 3000);
+            } else {
+              // Last round finished, show "End of Game" message then stats table
+              const overlayText = document.getElementById('round-overlay-text');
+              overlayText.textContent = "End of Game";
+              
+              // After 1 second, show stats table
+              setTimeout(() => {
+                document.getElementById('round-overlay').style.display = 'flex';
+                showStatsTable();
+              }, 1000);
+            }
+          }, 3000);
+        }
+      }, 1000);
+    }
+
+    // Initialize target number display with a placeholder
+    const targetNumberDisplay = document.getElementById('target-number');
+    if (targetNumberDisplay) {
+      targetNumberDisplay.textContent = "Waiting for your target number...";
+    }
+    
+    // Start the first round
+    startRound();
+
+    // Target number - will use getCurrentTargetNumber() in submit logic
+
+    // Function to show stats table at the end of the game
+    function showStatsTable() {
+      // Hide all game elements
+      document.getElementById('timer-container').style.display = 'none';
+      document.getElementById('target-number').style.display = 'none';
+      document.querySelector('table').style.display = 'none';
+      document.getElementById('overlay').style.display = 'none';
+      
+      // Show congratulations message
+      document.getElementById('congrats-message').textContent = `Well done, ${nickname}!`;
+      
+      // Populate stats table
+      const statsBody = document.getElementById('stats-body');
+      statsBody.innerHTML = '';
+      
+      // Calculate totals for summary
+      let totalCorrect = 0;
+      let totalIncorrect = 0;
+      let totalDuplicate = 0;
+      let totalEquations = 0;
+      
+      for (let i = 0; i < 4; i++) {
+        // Calculate which target number this player had in each round
+        // For round i, player with index playerIndex had target number with index (playerIndex + i) % 4
+        const targetIndex = (playerIndex + i) % 4;
+        
+        // Get target number, with fallback if targetNumbers array is incomplete
+        let targetNumber = "Unknown";
+        if (targetNumbers && targetNumbers.length > targetIndex) {
+          targetNumber = targetNumbers[targetIndex];
+        } else {
+          // If we don't have the target numbers, use a placeholder
+          console.warn(`Target number missing for round ${i+1}, index ${targetIndex}`);
+        }
+        
+        // Get stats for this round
+        const roundStats = gameStats[i];
+        const correct = roundStats.correct || 0;
+        const incorrect = roundStats.incorrect || 0;
+        const duplicate = roundStats.duplicate || 0;
+        
+        // Calculate accuracy for this target number
+        const totalAttempts = correct + incorrect + duplicate;
+        const accuracy = totalAttempts > 0 ? ((correct / totalAttempts) * 100).toFixed(1) : '0.0';
+        
+        // Create row with target number stats
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td>${targetNumber}</td>
+          <td>${correct}</td>
+          <td>${incorrect}</td>
+          <td>${duplicate}</td>
+          <td>${accuracy}%</td>
+        `;
+        statsBody.appendChild(row);
+        
+        // Add to totals
+        totalCorrect += correct;
+        totalIncorrect += incorrect;
+        totalDuplicate += duplicate;
+        totalEquations += totalAttempts;
+      }
+      
+      // Calculate overall accuracy
+      const overallAccuracy = totalEquations > 0 ? ((totalCorrect / totalEquations) * 100).toFixed(1) : '0.0';
+      
+      // Add a total row with a different style
+      const totalRow = document.createElement('tr');
+      totalRow.className = 'total-row';
+      totalRow.innerHTML = `
+        <td><strong>TOTAL</strong></td>
+        <td><strong>${totalCorrect}</strong></td>
+        <td><strong>${totalIncorrect}</strong></td>
+        <td><strong>${totalDuplicate}</strong></td>
+        <td><strong>${overallAccuracy}%</strong></td>
+      `;
+      statsBody.appendChild(totalRow);
+      
+      // Display summary stats
+      document.getElementById('summary-stats').innerHTML = `
+        <div>Total Correct: ${totalCorrect}</div>
+        <div>Total Incorrect: ${totalIncorrect}</div>
+        <div>Total Duplicates: ${totalDuplicate}</div>
+        <div>Overall Accuracy: ${overallAccuracy}%</div>
+      `;
+      
+      // Show stats table
+      document.getElementById('stats-container').style.display = 'flex';
+      
+      // Show confetti
+      showConfetti();
+    }
+
+    let confettiInterval = null;
+
+    // Function to show confetti
+    function showConfetti() {
+      const confettiContainer = document.getElementById('confetti-container');
+      const colors = ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff', '#ff8800'];
+      
+      function createConfetti() {
+        for (let i = 0; i < 20; i++) {
+          const confetti = document.createElement('div');
+          confetti.className = 'confetti';
+          confetti.style.left = Math.random() * 100 + '%';
+          confetti.style.top = '-10px';
+          confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+          confetti.style.animationDuration = (Math.random() * 3 + 2) + 's';
+          confetti.style.animationDelay = (Math.random() * 0.5) + 's';
+          
+          confettiContainer.appendChild(confetti);
+          
+          // Remove confetti after animation
+          setTimeout(() => {
+            confetti.remove();
+          }, 5000);
+        }
+      }
+      
+      // Keep creating confetti every 300ms
+      createConfetti();
+    }
+
+    // Function to stop confetti
+    function stopConfetti() {
+      if (confettiInterval) {
+        clearInterval(confettiInterval);
+        confettiInterval = null;
+      }
+      
+      // Clear all confetti
+      const confettiContainer = document.getElementById('confetti-container');
+      confettiContainer.innerHTML = '';
+    }
+
+    // Function to enable/disable the number pad
+    function enableKeypad(enable) {
+      const buttons = document.querySelectorAll('.button');
+      const displayElement = document.getElementById('display');
+      
+      buttons.forEach(button => {
+        button.disabled = !enable;
+      });
+      
+      if (displayElement) {
+        if (enable) {
+          displayElement.classList.remove('disabled');
+        } else {
+          displayElement.classList.add('disabled');
+        }
+      }
+    }
+
+    // Function to update item counts
+    function updateItemCounts() {
+      // Get all item containers
+      const containers = document.querySelectorAll('.item-container');
+      
+      containers.forEach(container => {
+        const containerId = container.id;
+        const playerId = containerId.replace('items-', '');
+        const countElement = document.getElementById(`count-${playerId}`);
+        
+        if (countElement) {
+          const items = container.querySelectorAll('span');
+          countElement.textContent = items.length;
+          
+          if (items.length > 7) {
+            countElement.style.backgroundColor = '#444';
+            countElement.title = `${items.length} items (scroll to see more)`;
+          } else {
+            countElement.style.backgroundColor = '#444';
+            countElement.title = `${items.length} items`;
+          }
+        }
+      });
+    }
+
+    // Function to add an item to a specific player's column
+    function addItem(playerName, itemText, itemClass) {
+      // Convert player name to ID format
+      const playerId = playerName.toLowerCase().replace(/\s+/g, '-');
+      const container = document.getElementById(`items-${playerId}`);
+      
+      if (container) {
+        const newItem = document.createElement('span');
+        newItem.className = itemClass;
+        newItem.textContent = itemText;
+        // Insert at the beginning (top) instead of appending to the end
+        container.insertBefore(newItem, container.firstChild);
+        updateItemCounts();
+      }
+    }
+
+    // Function to remove an item from a specific player's column
+    function removeItem(playerName) {
+      // Convert player name to ID format
+      const playerId = playerName.toLowerCase().replace(/\s+/g, '-');
+      const container = document.getElementById(`items-${playerId}`);
+      
+      if (container && container.children.length > 0) {
+        container.removeChild(container.lastChild);
+        updateItemCounts();
+      }
+    }
+    
+    // Function to clear all player columns
+    function clearAllPlayerColumns() {
+      const containers = document.querySelectorAll('.item-container');
+      containers.forEach(container => {
+        container.innerHTML = '';
+      });
+      updateItemCounts();
+    }
+
+    // Number Pad functionality
+    const display = document.getElementById('display');
+    const numButtons = document.querySelectorAll('.num-button');
+    const opButtons = document.querySelectorAll('.op-button');
+
+    // Number buttons
+    numButtons.forEach(button => {
+      button.addEventListener('click', () => {
+        display.textContent += button.textContent;
+      });
+    });
+
+    // Operation buttons
+    opButtons.forEach(button => {
+      button.addEventListener('click', () => {
+        display.textContent += ' ' + button.textContent + ' ';
+      });
+    });
+
+    // Clear button
+    const clearButton = document.getElementById('clear');
+    clearButton.addEventListener('click', () => {
+      display.textContent = '';
+    });
+
+    // Function to shake the screen
+    function shakeScreen() {
+      document.body.classList.add('shake');
+      setTimeout(() => {
+        document.body.classList.remove('shake');
+      }, 500);
+    }
+
+    // Function to check for duplicate equations in current player's column and other players' equations
+    function checkDuplicate(equation) {
+      // First, check in current player's displayed equations
+      // Convert player name to ID format
+      const playerId = nickname.toLowerCase().replace(/\s+/g, '-');
+      const container = document.getElementById(`items-${playerId}`);
+      
+      if (container) {
+        const items = container.querySelectorAll('span');
+        for (let item of items) {
+          if (item.textContent === equation) {
+            return item;
+          }
+        }
+      }
+      
+      // Next, check if any other player has already submitted this equation for the current target number
+      for (const playerName in playerEquations) {
+        // Skip checking our own equations
+        if (playerName === nickname) continue;
+        
+        // Check if this player has equations for the current target number
+        if (playerEquations[playerName][currentPlayerTargetNumber]) {
+          // Check each equation
+          for (const eq of playerEquations[playerName][currentPlayerTargetNumber]) {
+            if (eq.equation === equation) {
+              console.log(`Duplicate equation found from ${playerName}: ${equation}`);
+              
+              // Find the element in the other player's column to highlight it
+              const otherPlayerId = playerName.toLowerCase().replace(/\s+/g, '-');
+              const otherPlayerContainer = document.getElementById(`items-${otherPlayerId}`);
+              
+              if (otherPlayerContainer) {
+                const items = otherPlayerContainer.querySelectorAll('span');
+                for (let item of items) {
+                  if (item.textContent === equation) {
+                    return item; // Return the duplicate item for highlighting
+                  }
+                }
+              }
+              
+              return true; // Return true if we found a duplicate but couldn't find the element
+            }
+          }
+        }
+      }
+      
+      return null; // No duplicate found
+    }
+
+    // Function to throb a specific item
+    function throbItem(item) {
+      item.classList.add('duplicate-throb');
+      setTimeout(() => {
+        item.classList.remove('duplicate-throb');
+      }, 500);
+    }
+    
+    // Function to display equations for the current target number
+    function displayEquationsForCurrentTarget() {
+      console.log(`Displaying equations for target number ${currentPlayerTargetNumber}`);
+      
+      // Clear all columns first
+      clearAllPlayerColumns();
+      
+      // For each player
+      for (const playerName in playerEquations) {
+        // Check if this player has equations for the current target number
+        if (playerEquations[playerName] && playerEquations[playerName][currentPlayerTargetNumber]) {
+          const equations = playerEquations[playerName][currentPlayerTargetNumber];
+          
+          console.log(`Found ${equations.length} equations from ${playerName} for target ${currentPlayerTargetNumber}`);
+          
+          // Add each equation to the player's column
+          equations.forEach(eq => {
+            addItem(playerName, eq.equation, eq.colorClass);
+          });
+        }
+      }
+    }
+
+    // Submit button - evaluates equation and adds to Ambrose column if correct
+    const submitButton = document.getElementById('submit');
+    submitButton.addEventListener('click', () => {
+      const equation = display.textContent.trim();
+      
+      if (equation !== '') {
+        try {
+          // Replace operation symbols for JavaScript evaluation
+          let evalEquation = equation
+            .replace(/×/g, '*')
+            .replace(/÷/g, '/');
+          
+          // Evaluate the equation
+          const result = eval(evalEquation);
+          
+          // Send the equation to the server
+          socket.emit('student:submit_equation', {
+            gamePin,
+            equation,
+            result,
+            playerIndex,
+            targetNumber: getCurrentTargetNumber()
+          });
+          
+          // The server will respond with equation:correct, equation:incorrect, or equation:duplicate
+          // Those event handlers will update the UI accordingly
+          
+          // Local check for duplicates (for UI feedback)
+          const duplicateItem = checkDuplicate(equation);
+          if (duplicateItem) {
+            // Don't clear display yet - wait for server response
+          } else if (result === getCurrentTargetNumber()) {
+            // Get the correct color for this player based on player index
+            const colorClass = playerColors[playerIndex % playerColors.length];
+            
+            // Optimistically add it (server will confirm)
+            addItem(nickname, equation, colorClass);
+            display.textContent = '';
+          } else {
+            // Optimistically show error (server will confirm)
+            shakeScreen();
+            display.textContent = '';
+          }
+        } catch (error) {
+          // Invalid equation
+          shakeScreen();
+          display.textContent = '';
+          
+          // Send to server as incorrect
+          socket.emit('student:submit_equation', {
+            gamePin,
+            equation,
+            result: null,
+            playerIndex,
+            targetNumber: getCurrentTargetNumber()
+          });
+        }
+      }
+    });
+
+    // Initialize counts on page load
+    document.addEventListener('DOMContentLoaded', updateItemCounts);
+
+    // Example function for adding items (for testing)
+    window.addItemToPlayer = (playerName, text, className) => addItem(playerName, text, className);
+
+    // Play Again button functionality
+    document.getElementById('play-again-button').addEventListener('click', () => {
+      // Stop confetti
+      stopConfetti();
+      
+      // Redirect back to the game pin page to join a new game
+      window.location.href = 'student_pin.html';
+    });
+  </script>
+</body>
+</html>
+

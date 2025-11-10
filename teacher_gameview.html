@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Number Net - Game View</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 20px;
+      background-color: #1e1e1e;
+      font-family: Arial, sans-serif;
+      color: #ffffff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 30px;
+      min-height: 100vh;
+    }
+
+    .header-section {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 30px;
+      width: 100%;
+      max-width: 1200px;
+    }
+
+    .round-indicator {
+      font-size: 32px;
+      font-weight: bold;
+    }
+
+    .timer-section {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      background-color: #2c2c2c;
+      padding: 15px 30px;
+      border-radius: 10px;
+      box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+    }
+
+    .timer-icon {
+      width: 40px;
+      height: 40px;
+      object-fit: contain;
+    }
+
+    #timer {
+      font-size: 32px;
+      font-weight: bold;
+    }
+
+    .pause-button {
+      background-color: #ff6b6b;
+      color: #ffffff;
+      border: none;
+      border-radius: 10px;
+      padding: 12px 30px;
+      font-size: 20px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+
+    .pause-button:hover {
+      background-color: #ff5252;
+    }
+
+    .pause-button:active {
+      background-color: #ff4444;
+    }
+    
+    .control-button {
+      background-color: #4CAF50;
+      color: #ffffff;
+      border: none;
+      border-radius: 10px;
+      padding: 15px 30px;
+      font-size: 20px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+      margin: 0 15px;
+      min-width: 180px;
+    }
+    
+    .control-button:hover {
+      background-color: #45a049;
+    }
+    
+    .control-button:active {
+      background-color: #3d8b40;
+    }
+    
+    #export-results-button {
+      background-color: #2196F3;
+    }
+    
+    #export-results-button:hover {
+      background-color: #0b7dda;
+    }
+    
+    #export-results-button:active {
+      background-color: #0a69b9;
+    }
+
+    .status-label {
+      font-size: 36px;
+      font-weight: bold;
+      text-align: center;
+      margin: 20px 0;
+    }
+
+    .table-container {
+      width: 100%;
+      max-width: 1200px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background-color: #2c2c2c;
+      border-radius: 15px;
+      overflow: hidden;
+      box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+    }
+
+    th {
+      background-color: #333;
+      padding: 20px;
+      text-align: center;
+      font-size: 20px;
+      font-weight: bold;
+      border-bottom: 2px solid #444;
+    }
+
+    td {
+      padding: 20px;
+      text-align: center;
+      font-size: 18px;
+      border-bottom: 1px solid #444;
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    .student-name {
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <div class="header-section">
+    <div class="round-indicator">
+      Round <span id="current-round">1</span>
+    </div>
+    <div class="timer-section">
+      <img src="timerIcon.png" alt="Timer" class="timer-icon">
+      <div id="timer">60</div>
+    </div>
+    <button class="pause-button" id="pause-button">Pause</button>
+  </div>
+
+  <div id="status-label" class="status-label">Live Game Status</div>
+
+  <div class="table-container">
+    <table id="live-stats-table">
+      <thead>
+        <tr>
+          <th>Student</th>
+          <th>Target Number</th>
+          <th>Correct</th>
+          <th>Incorrect</th>
+          <th>Duplicate</th>
+        </tr>
+      </thead>
+      <tbody id="stats-body">
+        <!-- Player stats will be populated dynamically -->
+      </tbody>
+    </table>
+    
+    <!-- Final Game Results Table (hidden initially) -->
+    <table id="final-stats-table" style="display: none;">
+      <thead>
+        <tr>
+          <th>Student</th>
+          <th>Correct</th>
+          <th>Incorrect</th>
+          <th>Duplicate</th>
+          <th>Accuracy</th>
+        </tr>
+      </thead>
+      <tbody id="final-stats-body">
+        <!-- Final stats will be populated dynamically -->
+      </tbody>
+    </table>
+  </div>
+  
+  <!-- Final Game Controls (hidden initially) -->
+  <div id="final-game-controls" style="display: none; margin-top: 30px; text-align: center;">
+    <button id="play-again-button" class="control-button">Play Again</button>
+    <button id="export-results-button" class="control-button">Export Results</button>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    // Check if user is authenticated
+    const gamePin = sessionStorage.getItem('gamePin');
+    const teacherEmail = sessionStorage.getItem('teacherEmail');
+    
+    if (!gamePin) {
+      window.location.href = 'teacher_signin.html';
+    }
+    
+    // Connect to the socket server
+    const socket = io();
+    
+    // Rejoin the game as teacher
+    socket.emit('teacher:rejoin_game', { gamePin, teacherEmail });
+    
+    // DOM elements
+    const timerDisplay = document.getElementById('timer');
+    const currentRoundDisplay = document.getElementById('current-round');
+    const pauseButton = document.getElementById('pause-button');
+    const tableBody = document.getElementById('stats-body');
+    
+    let isPaused = false;
+    let currentTargetNumber = 0;
+    
+    // Request initial game state when connecting
+    socket.emit('teacher:request_game_state', { gamePin });
+    
+    // Track current round for detecting changes
+    let previousRound = 1;
+    
+    // Listen for time updates
+    socket.on('game:time_update', (data) => {
+      timerDisplay.textContent = data.timeLeft;
+      currentRoundDisplay.textContent = data.currentRound;
+      
+      // Detect round change
+      if (data.currentRound !== previousRound) {
+        console.log(`Round changed from ${previousRound} to ${data.currentRound}`);
+        previousRound = data.currentRound;
+        
+        // Request updated game state when round changes
+        socket.emit('teacher:request_game_state', { gamePin });
+      }
+      
+      // Detect timer reset to ROUND_DURATION (60 seconds)
+      if (data.timeLeft === 60) {
+        console.log('Timer reset detected, requesting updated game state');
+        // Request updated game state to get fresh target numbers and stats
+        socket.emit('teacher:request_game_state', { gamePin });
+      }
+    });
+    
+    // Listen for stats updates
+    socket.on('game:stats_update', (data) => {
+      console.log('Received stats update:', data);
+      
+      // Log player targets specifically
+      if (data.playerTargets) {
+        console.log('Received player targets in stats update:', data.playerTargets);
+      } else {
+        console.warn('No player targets in stats update data');
+      }
+      
+      updateStatsTable(data);
+    });
+    
+    // Listen for round start events
+    socket.on('game:round_start', (data) => {
+      console.log('New round starting:', data);
+      
+      // If player targets are included, update the table immediately
+      if (data.playerTargets) {
+        // Get the current game stats from the table
+        const gameStats = {};
+        const rows = tableBody.querySelectorAll('tr');
+        
+        rows.forEach(row => {
+          const cells = row.querySelectorAll('td');
+          if (cells.length >= 5) {
+            const nickname = cells[0].textContent;
+            const correct = parseInt(cells[2].textContent) || 0;
+            const incorrect = parseInt(cells[3].textContent) || 0;
+            const duplicate = parseInt(cells[4].textContent) || 0;
+            
+            gameStats[nickname] = [{
+              correct: correct,
+              incorrect: incorrect,
+              duplicate: duplicate
+            }];
+          }
+        });
+        
+        // Update the table with new target numbers
+        updateStatsTable({
+          gameStats: gameStats,
+          currentRound: data.currentRound,
+          playerTargets: data.playerTargets
+        });
+      } else {
+        // Request updated game state to get fresh target numbers and stats
+        socket.emit('teacher:request_game_state', { gamePin });
+      }
+    });
+    
+    // Listen for round announcement events
+    socket.on('game:round_announcement', (data) => {
+      console.log('Round announcement:', data);
+      
+      // Update the round display immediately
+      currentRoundDisplay.textContent = data.round;
+      previousRound = data.round;
+      
+      // If player targets are included, update the table
+      if (data.playerTargets) {
+        // Get the current game stats from the table
+        const gameStats = {};
+        const rows = tableBody.querySelectorAll('tr');
+        
+        rows.forEach(row => {
+          const cells = row.querySelectorAll('td');
+          if (cells.length >= 5) {
+            const nickname = cells[0].textContent;
+            const correct = parseInt(cells[2].textContent) || 0;
+            const incorrect = parseInt(cells[3].textContent) || 0;
+            const duplicate = parseInt(cells[4].textContent) || 0;
+            
+            gameStats[nickname] = [{
+              correct: correct,
+              incorrect: incorrect,
+              duplicate: duplicate
+            }];
+          }
+        });
+        
+        // Update the table with new target numbers
+        updateStatsTable({
+          gameStats: gameStats,
+          currentRound: data.round,
+          playerTargets: data.playerTargets
+        });
+      }
+    });
+    
+    // Listen for initial game state
+    socket.on('game:state', (data) => {
+      console.log('Received game state:', data);
+      
+      // Log player targets specifically
+      if (data.playerTargets) {
+        console.log('Received player targets in game state:', data.playerTargets);
+      } else {
+        console.warn('No player targets in game state data');
+      }
+      
+      // Update round and timer
+      if (data.currentRound) {
+        currentRoundDisplay.textContent = data.currentRound;
+      }
+      
+      if (data.timeLeft) {
+        timerDisplay.textContent = data.timeLeft;
+      }
+      
+      // Update pause button state if game is paused
+      if (data.status === 'paused') {
+        isPaused = true;
+        pauseButton.textContent = 'Resume';
+        pauseButton.style.backgroundColor = '#4CAF50';
+      }
+      
+      // Update stats table
+      if (data.gameStats && data.currentRound) {
+        updateStatsTable({
+          gameStats: data.gameStats,
+          currentRound: data.currentRound,
+          targetNumber: data.targetNumbers ? data.targetNumbers[data.currentRound - 1] : null,
+          playerTargets: data.playerTargets || {}  // Include player-specific target numbers
+        });
+      }
+    });
+    
+    // Function to update the stats table
+    function updateStatsTable(data) {
+      const { gameStats, currentRound, targetNumber, playerTargets } = data;
+      
+      // Save current target number for later use
+      currentTargetNumber = targetNumber;
+      
+      console.log('Updating stats table with data:', data);
+      console.log('Player targets:', playerTargets);
+      
+      // Clear the table
+      tableBody.innerHTML = '';
+      
+      // Check if there are any players with stats
+      if (!gameStats || Object.keys(gameStats).length === 0) {
+        const emptyRow = document.createElement('tr');
+        emptyRow.innerHTML = `
+          <td colspan="5" style="text-align: center; padding: 30px;">No player stats available yet</td>
+        `;
+        tableBody.appendChild(emptyRow);
+        return;
+      }
+      
+      // Add each player's stats
+      for (const nickname in gameStats) {
+        const playerStats = gameStats[nickname];
+        const currentRoundStats = playerStats[currentRound - 1] || { correct: 0, incorrect: 0, duplicate: 0 };
+        
+        // Get player-specific target number if available
+        let playerTarget = 'N/A';
+        
+        if (playerTargets && typeof playerTargets === 'object') {
+          if (nickname in playerTargets) {
+            playerTarget = playerTargets[nickname];
+          } else {
+            console.warn(`No target number found for player ${nickname}`);
+          }
+        } else {
+          console.warn('No playerTargets object available');
+        }
+        
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td class="student-name">${nickname}</td>
+          <td>${playerTarget}</td>
+          <td>${currentRoundStats.correct || 0}</td>
+          <td>${currentRoundStats.incorrect || 0}</td>
+          <td>${currentRoundStats.duplicate || 0}</td>
+        `;
+        
+        tableBody.appendChild(row);
+      }
+    }
+    
+    // Pause button functionality
+    pauseButton.addEventListener('click', () => {
+      isPaused = !isPaused;
+      
+      socket.emit('teacher:toggle_pause', { gamePin });
+      
+      if (isPaused) {
+        pauseButton.textContent = 'Resume';
+        pauseButton.style.backgroundColor = '#4CAF50';
+      } else {
+        pauseButton.textContent = 'Pause';
+        pauseButton.style.backgroundColor = '#ff6b6b';
+      }
+    });
+    
+    // Play Again button functionality
+    document.getElementById('play-again-button').addEventListener('click', () => {
+      // Create a new game
+      socket.emit('teacher:create_game', { email: teacherEmail });
+      
+      // Listen for the new game creation response
+      socket.once('game:created', (data) => {
+        const newGamePin = data.gamePin;
+        console.log('New game created with PIN:', newGamePin);
+        
+        // Store the new game pin in session storage
+        sessionStorage.setItem('gamePin', newGamePin);
+        
+        // Redirect to the game start page
+        window.location.href = 'teacher_gamestart.html';
+      });
+    });
+    
+    // Export Results button functionality
+    document.getElementById('export-results-button').addEventListener('click', () => {
+      // Get final stats data
+      const finalStats = getFinalStats();
+      
+      // Convert to CSV
+      const csv = convertToCSV(finalStats);
+      
+      // Create download link
+      const downloadLink = document.createElement('a');
+      downloadLink.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+      downloadLink.download = `number_net_results_${gamePin}_${new Date().toISOString().split('T')[0]}.csv`;
+      
+      // Trigger download
+      document.body.appendChild(downloadLink);
+      downloadLink.click();
+      document.body.removeChild(downloadLink);
+    });
+    
+    // Function to get final stats from the table
+    function getFinalStats() {
+      const finalStats = [];
+      const rows = document.querySelectorAll('#final-stats-body tr');
+      
+      rows.forEach(row => {
+        const cells = row.querySelectorAll('td');
+        if (cells.length >= 5) {
+          finalStats.push({
+            student: cells[0].textContent,
+            correct: parseInt(cells[1].textContent) || 0,
+            incorrect: parseInt(cells[2].textContent) || 0,
+            duplicate: parseInt(cells[3].textContent) || 0,
+            accuracy: cells[4].textContent
+          });
+        }
+      });
+      
+      return finalStats;
+    }
+    
+    // Function to convert data to CSV
+    function convertToCSV(data) {
+      const header = ['Student', 'Correct', 'Incorrect', 'Duplicate', 'Accuracy'];
+      const csvRows = [];
+      
+      // Add header
+      csvRows.push(header.join(','));
+      
+      // Add data rows
+      data.forEach(item => {
+        const row = [
+          `"${item.student}"`, // Wrap in quotes to handle names with commas
+          item.correct,
+          item.incorrect,
+          item.duplicate,
+          `"${item.accuracy}"`
+        ];
+        csvRows.push(row.join(','));
+      });
+      
+      return csvRows.join('\n');
+    }
+    
+    // Handle final game stats
+    socket.on('game:final_stats', (data) => {
+      console.log('Received final game stats:', data);
+      displayFinalGameStats(data.finalGameStats);
+    });
+    
+    // Function to display final game stats
+    function displayFinalGameStats(finalStats) {
+      // Update the status label
+      document.getElementById('status-label').textContent = 'Final Game Results';
+      
+      // Hide the live stats table and show the final stats table
+      document.getElementById('live-stats-table').style.display = 'none';
+      document.getElementById('final-stats-table').style.display = 'table';
+      
+      // Hide the pause button
+      pauseButton.style.display = 'none';
+      
+      // Show the final game controls
+      document.getElementById('final-game-controls').style.display = 'block';
+      
+      // Clear the final stats table
+      const finalStatsBody = document.getElementById('final-stats-body');
+      finalStatsBody.innerHTML = '';
+      
+      // Add each player's final stats
+      for (const nickname in finalStats) {
+        const playerStats = finalStats[nickname];
+        
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td class="student-name">${nickname}</td>
+          <td>${playerStats.correct}</td>
+          <td>${playerStats.incorrect}</td>
+          <td>${playerStats.duplicate}</td>
+          <td>${playerStats.accuracy}</td>
+        `;
+        
+        finalStatsBody.appendChild(row);
+      }
+    }
+  </script>
+</body>
+</html>
+
