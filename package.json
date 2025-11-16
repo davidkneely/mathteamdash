@@ -1,7 +1,7 @@
 {
   "name": "number-net",
   "version": "1.0.0",
-  "description": "Number Net multiplayer math game",
+  "description": "Team Number Dash multiplayer math game",
   "main": "server.js",
   "scripts": {
     "start": "node --inspect server.js",

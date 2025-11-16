@@ -1,6 +1,6 @@
-# Number Net - Multiplayer Math Game
+# Team Number Dash - Multiplayer Math Game
 
-Number Net is a multiplayer math game where students solve math challenges by creating equations that equal a target number.
+Team Number Dash is a multiplayer math game where students solve math challenges by creating equations that equal a target number.
 
 ## Project Structure
 
@@ -33,8 +33,8 @@ npm start
 ```
 
 6. Open your browser and navigate to:
-   - Teacher: http://localhost:3000/teacher_signin.html
-   - Students: http://localhost:3000/student_pin.html
+   - Teacher: http://64.227.45.55:3000/teacher_signin.html
+   - Students: http://64.227.45.55:3000/student_pin.html
 
 ## Game Flow
 
