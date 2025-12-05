@@ -219,7 +219,9 @@
       display: grid;
       grid-template-columns: repeat(4, 70px);
       grid-template-rows: repeat(4, 70px);
-      grid-gap: 10px;
+      grid-gap: 10px
+      /* prevent double tap to zoom on mobile */
+      touch-action: manipulation; 
     }
 
     .button {
@@ -1484,6 +1486,17 @@
       // Redirect back to the game pin page to join a new game
       window.location.href = 'student_pin.html';
     });
+
+    let lastTouch = 0;
+
+    document.addEventListener('touchend', function (e) {
+      const now = new Date().getTime();
+      if (now - lastTouch <= 300) {
+        e.preventDefault(); // blocks double-tap zoom
+      }
+      lastTouch = now;
+    }, { passive: false });
+
   </script>
 </body>
 </html>
